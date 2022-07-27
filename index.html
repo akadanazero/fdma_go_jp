@@ -1,21 +1,79 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<title>新型コロナウイルス 入院治療等を要する者の数と救急搬送困難事案数</title>
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>都道府県別 救急搬送困難事案数</title>
+<body>
+<h1></h1>
+<div id=cchart></div>
+<div id=credit>
+  <div><a href=https://github.com/code4fukui/fdma_go_jp>code4fukui/fdma_go_jp: 総務省消防庁オープンデータのCSV化</a></div>
+</div>
+
 <style>
 body {
   text-align: center;
+  font-family: sans-serif;
+}
+#credit {
+  margin: 1em;
 }
 </style>
-</head><body>
 
-<script type="module" src="graph.js"></script>
-<mhlw-graph view-src=true></mhlw-graph>
+<script type="module">
+import Chart from "https://code4sabae.github.io/kafumon/lib/Chart.mjs";
+import { CSV } from "https://js.sabae.cc/CSV.js";
+import { ArrayUtil } from "https://js.sabae.cc/ArrayUtil.js";
 
-<div style="margin:1em;text-align:center;">
-	<a href="https://www.stopcovid19.jp/">
-	<img src=https://www.stopcovid19.jp/img/stopcovid19_banner.png style="width:70vw"><br>
-	「COVID-19 JAPAN 新型コロナウイルス対策ダッシュボード」<br>
-	</a>
-</div>
+document.querySelector("h1").textContent = document.title;
 
-<a href=https://github.com/code4fukui/fdma_go_jp/>総務省消防庁オープンデータのCSV化</a> by <a href=https://code4fukui.github.io/>Code for FUKUI</a><br>
-</body><html>
+const selpref = decodeURIComponent(document.location.hash.substring(1));
+console.log(selpref);
+
+const fn = "emergencytransport_difficult_pref.csv";
+const data = CSV.toJSON(await CSV.fetch(fn));
+console.log(data);
+
+const date = ArrayUtil.toUnique(data.map(d => d.開始日)).sort();
+console.log(date);
+const prefs = ArrayUtil.toUnique(data.map(d => d.都道府県));
+let idx = 0;
+const sep = 8;
+const datasets = prefs.map(p => {
+  const data2 = date.map(dt => data.find(d => d.都道府県 == p && d.開始日 == dt)?.救急搬送困難事案数);
+  return {
+    type: "line",
+    label: p,
+    data: data2,
+    fill: false,
+    lineTension: 0,
+    yAxisID: "yr",
+    borderColor: `hsl(${Math.floor(idx++ / sep) * (360 / sep)},${Math.floor(idx % sep) * 15 + 20}%,50%)`,
+    hidden: selpref ? selpref != p : false,
+  }
+});
+
+const config = {
+  data: {
+    labels: date,
+    datasets,
+  },
+  options: {
+    //title: { display: true, text: "都道府県別 救急搬送困難事案数" },
+    scales: {
+      xAxes: [{ scaleLabel: { display: false, labelString: "日付" } }],
+      yAxes: [
+        { id: "yr", position: "right", scaleLabel: { display: true, labelString: "救急搬送困難事案数" }, ticks: { beginAtZero: true } },
+        //{ id: "yr", position: "left", scaleLabel: { display: true, labelString: "PCR 検査実施件数・現在入院治療を要する者" }, ticks: { beginAtZero: true } },
+      ],
+    },
+    legend: { display: true }
+  }
+};
+console.log(config);
+
+const chart = document.createElement("canvas");
+chart.width = 600;
+chart.height = 350;
+new Chart.Chart(chart, config);
+cchart.appendChild(chart);
+
+</script>
+</html>
