@@ -66,6 +66,7 @@ const main = async (parent) => {
       legend: { display: true }
     }
   };
+  console.log(config);
 
   parent.style.display = "block";
   parent.style.marginBottom = ".5em";
